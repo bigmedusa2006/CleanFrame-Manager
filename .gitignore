@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.env
+
+# Build and packaged output
+build/
+dist/
+*.exe
+*.msi
+*.wgt
+*.lnk
+
+# Local/editor files
+.idea/
+.vscode/
+*.user
+*.suo
+*.tmp
+*.log
+
+# Large extracted or generated artifacts
+samsung_page.html
+extracted_assets.json
+official_specs.json
+
+# Local certificates and signing material
+*.p12
+*.pem
+*.key
+*.pwd
+certificates/
+keystore/

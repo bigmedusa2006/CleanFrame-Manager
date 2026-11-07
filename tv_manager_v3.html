@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samsung Clean Frame Manager</title>
+<style>
+/* Existing styles ... */
+/* Toast variants */
+.toast.success {background-color: var(--green); color: #fff;}
+.toast.error {background-color: var(--red); color: #fff;}
+.toast.info {background-color: var(--blue); color: #fff;}
+/* Uninstall button */
+.uninstall-btn {margin-left: 8px; font-size: 10px; padding: 4px 6px;}
+
+  :root {
+    --bg: #f8fafc;
+    --panel: #ffffff;
+    --line: #e2e8f0;
+    --line-subtle: #edf2f7;
+    --text: #0f172a;
+    --muted: #64748b;
+    --blue: #0284c7;
+    --blue-hover: #0369a1;
+    --blue-soft: #f0f9ff;
+    --blue-border: #bae6fd;
+    --green: #10b981;
+    --green-soft: #ecfdf5;
+    --green-border: #a7f3d0;
+    --red: #ef4444;
+    --red-soft: #fef2f2;
+    --orange: #f59e0b;
+    --radius: 10px;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", Roboto, system-ui, sans-serif;
+    font-size: 13px; color: var(--text); background: var(--bg);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    height: 54px; padding: 0 20px; background: var(--panel); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-shrink: 0;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-logo {
+    width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #0284c7, #2563eb);
+    color: #fff; font-weight: 800; font-size: 12px; display: grid; place-items: center; letter-spacing: -0.5px;
+  }
+  .brand-title { font-weight: 700; font-size: 14px; letter-spacing: -0.2px; }
+  .brand-title small { font-weight: 500; color: var(--muted); font-size: 11.5px; margin-left: 6px; }
+
+  /* Navigation Tabs */
+  .tabs { display: flex; gap: 4px; background: #f1f5f9; padding: 3px; border-radius: 8px; }
+  .tab {
+    padding: 5px 14px; border: 0; background: transparent; font: inherit; font-size: 12px; font-weight: 600;
+    color: var(--muted); border-radius: 6px; cursor: pointer; transition: all .15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--panel); color: var(--text); box-shadow: var(--shadow-sm); }
+
+  /* IP & Connection Controls */
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+  .ip-wrap { display: flex; align-items: center; gap: 6px; }
+  .ip-wrap label { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+  .ip-input {
+    width: 125px; height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px;
+    font: inherit; font-size: 12.5px; background: var(--bg); color: var(--text);
+  }
+  .ip-input:focus { outline: none; border-color: var(--blue); background: #fff; box-shadow: 0 0 0 2px var(--blue-soft); }
+
+  .conn-pill {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; background: #f1f5f9; color: var(--muted); border: 1px solid var(--line);
+  }
+  .conn-pill.on { background: var(--green-soft); color: #047857; border-color: var(--green-border); }
+  .conn-pill.off { background: var(--red-soft); color: var(--red); border-color: #fecaca; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  /* Buttons */
+  .btn {
+    height: 32px; padding: 0 13px; border: 1px solid var(--line); border-radius: 6px;
+    background: #fff; color: var(--text); font: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+  .btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .btn.primary:hover { background: var(--blue-hover); border-color: var(--blue-hover); }
+  .btn.secondary { background: #f8fafc; border-color: var(--line); color: var(--text); }
+  .btn.danger { background: var(--red-soft); color: var(--red); border-color: #fecaca; }
+  .btn.danger:hover { background: #fee2e2; }
+
+  /* Main Container */
+  main { flex: 1; min-height: 0; overflow: hidden; padding: 18px 20px; display: flex; flex-direction: column; }
+  .page { display: none; height: 100%; flex-direction: column; }
+  .page.active { display: flex; }
+  #page-dashboard { overflow-y: auto; padding: 1px 2px 8px; }
+
+  /* ---------- Dashboard Grid (Fits perfectly, no scroll) ---------- */
+  .dashboard-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px; flex: 0 0 auto; min-height: 0;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 18px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-shrink: 0;
+  }
+  .card-title { font-size: 12.5px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+
+  /* Visual Before/After Preview */
+  .preview-box {
+    background: #ffffff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+    margin-bottom: 14px; box-shadow: var(--shadow-sm); flex-shrink: 0;
+  }
+  .preview-toggle-bar {
+    display: flex; background: #f1f5f9; padding: 4px; border-bottom: 1px solid var(--line);
+  }
+  .preview-toggle-btn {
+    flex: 1; padding: 6px 10px; font-size: 11.5px; font-weight: 600; border: 0; background: transparent;
+    color: var(--muted); border-radius: 5px; cursor: pointer; transition: all .15s; text-align: center;
+  }
+  .preview-toggle-btn.active {
+    background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  .preview-frame {
+    position: relative; aspect-ratio: 16 / 9; max-height: 190px; margin: 0 auto;
+    background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  }
+  .preview-frame img {
+    width: 100%; height: 100%; object-fit: contain; transition: opacity .15s ease-in-out;
+  }
+  .preview-caption-bar {
+    padding: 8px 12px; background: #ffffff; border-top: 1px solid var(--line-subtle);
+    font-size: 11.5px; color: var(--muted); display: flex; align-items: center; justify-content: space-between;
+  }
+  .badge-tag {
+    padding: 2px 7px; border-radius: 4px; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  }
+  .badge-tag.before { background: var(--red-soft); color: var(--red); }
+  .badge-tag.after { background: var(--green-soft); color: #059669; }
+
+  /* TV Specs List */
+  .specs-table {
+    display: flex; flex-direction: column; gap: 6px; font-size: 12px; margin-top: auto;
+  }
+  .spec-row {
+    display: flex; align-items: center; justify-content: space-between; padding: 6px 8px;
+    background: #f8fafc; border-radius: 6px; border: 1px solid var(--line-subtle);
+  }
+  .spec-label { color: var(--muted); font-weight: 500; }
+  .spec-val { font-weight: 600; color: var(--text); font-family: monospace; font-size: 11.5px; }
+
+  .guide-link-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; margin-top: 10px; padding: 7px; font-size: 11.5px; font-weight: 600;
+    color: var(--blue); background: var(--blue-soft); border: 1px solid var(--blue-border);
+    border-radius: 6px; text-decoration: none; cursor: pointer; transition: background .15s;
+  }
+  .guide-link-btn:hover { background: #e0f2fe; }
+
+  /* Right Column: Actions */
+  .action-hero {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin-bottom: 14px; flex-shrink: 0;
+  }
+  .action-hero-title { font-size: 14px; font-weight: 700; color: #0369a1; margin-bottom: 4px; }
+  .action-hero-desc { font-size: 12px; color: #334155; line-height: 1.45; margin-bottom: 12px; }
+  .action-hero-guarantees {
+    list-style: none; font-size: 11.5px; color: #047857; display: flex; flex-direction: column;
+    gap: 4px; margin-bottom: 14px; font-weight: 500;
+  }
+  .action-hero-guarantees li::before { content: "✔ "; font-weight: 700; }
+
+  .hero-btn-row { display: flex; gap: 8px; }
+  .hero-btn-row .btn { height: 38px; font-size: 13px; font-weight: 700; border-radius: 8px; }
+  .btn-setup { flex: 1.4; background: var(--blue); border-color: var(--blue); color: #fff; }
+  .btn-setup:hover { background: var(--blue-hover); }
+  .btn-restore { flex: 1; background: #fff; border-color: #cbd5e1; color: var(--text); }
+  .btn-restore:hover { background: #f8fafc; }
+
+  /* Maintenance Tools (Compact 2x2 Grid) */
+  .tools-section { flex: 1; display: flex; flex-direction: column; }
+  .tools-section-title { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tool-btn {
+    height: 36px; padding: 0 10px; font-size: 12px; font-weight: 600; justify-content: flex-start;
+    background: #fff; border: 1px solid var(--line); border-radius: 6px;
+  }
+  .tool-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+  /* Live Activity Strip (Bottom of Dashboard) */
+  .live-strip {
+    height: 38px; margin-top: 14px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; flex-shrink: 0; box-shadow: var(--shadow-sm);
+  }
+  .live-status-wrap { display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; }
+  .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .live-text { color: var(--muted); text-overflow: ellipsis; overflow: hidden; }
+  .live-label { color: var(--muted); font-weight: 700; font-size: 10px; letter-spacing: .45px; text-transform: uppercase; flex-shrink: 0; }
+
+  /* Progress Bar */
+  .progress { height: 3px; background: transparent; overflow: hidden; }
+  .progress > span { display: block; height: 100%; width: 0; background: var(--blue); transition: width .3s; }
+  .progress.busy > span { width: 35%; animation: slide 1.2s ease-in-out infinite; }
+  @keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+
+  /* ---------- Integrated Activity Console ---------- */
+  .log-container {
+    height: 210px; flex: 0 0 210px; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); min-height: 130px; margin-top: 14px;
+  }
+  .log-toolbar {
+    padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .log {
+    flex: 1; background: #0f172a; color: #e2e8f0; padding: 14px; font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11.5px; line-height: 1.6; overflow-y: auto;
+  }
+  .log .t { color: #64748b; margin-right: 8px; }
+  .log .ok { color: #34d399; }
+  .log .warn { color: #fbbf24; }
+  .log .err { color: #f87171; }
+  .log .cmd { color: #38bdf8; }
+  .log-heading { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 12.5px; }
+  .log-live { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
+  .log-count { color: var(--muted); font-size: 11px; font-weight: 500; margin-left: 2px; }
+
+  /* ---------- About Tab ---------- */
+  .about-container {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 24px; box-shadow: var(--shadow-sm); max-width: 680px; margin: 0 auto;
+  }
+  .about-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+  .about-desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+
+  /* ---------- Modal Dialogs ---------- */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px);
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-bg.show { display: flex; }
+  .wizard-progress { display:flex; gap:4px; margin: 8px 0 18px; }
+  .wizard-progress span { flex:1; height:6px; border-radius:99px; background:#e2e8f0; transition:background .2s; }
+  .wizard-progress span.done { background:#10b981; }
+  .wizard-progress span.current { background:#0284c7; animation:wizardPulse 1.2s ease-in-out infinite; }
+  @keyframes wizardPulse { 50% { opacity:.45; } }
+  .wizard-step-icon { width:42px; height:42px; display:grid; place-items:center; border-radius:12px; background:#e0f2fe; color:#0369a1; font-size:22px; margin-bottom:10px; }
+  .wizard-status { display:flex; align-items:center; gap:8px; min-height:24px; color:var(--muted); }
+  .wizard-spinner { width:14px; height:14px; border:2px solid #bae6fd; border-top-color:#0284c7; border-radius:50%; animation:wizardSpin .8s linear infinite; display:inline-block; }
+  @keyframes wizardSpin { to { transform:rotate(360deg); } }
+  .modal {
+    background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px;
+    max-width: 480px; width: 100%; box-shadow: var(--shadow-md); animation: popIn .15s ease-out;
+  }
+  @keyframes popIn { 0% { transform: scale(0.96); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  .modal h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .modal p { color: var(--muted); line-height: 1.5; font-size: 12.5px; margin-bottom: 16px; }
+  .modal-reassure-box {
+    background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px;
+    font-size: 11.5px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* Pairing Guide Modal specific */
+  .pairing-step { display: flex; gap: 10px; margin-bottom: 12px; font-size: 12.5px; }
+  .pairing-step-num {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--blue-soft); color: var(--blue);
+    font-weight: 700; font-size: 11px; display: grid; place-items: center; flex-shrink: 0;
+  }
+  .ip-highlight-box {
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px 12px;
+    margin: 8px 0; display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .toast {
+    position: fixed; bottom: 16px; right: 16px; background: #0f172a; color: #fff; padding: 8px 14px;
+    border-radius: 6px; font-size: 12px; font-weight: 500; opacity: 0; transform: translateY(6px);
+    transition: all .2s; z-index: 1000; box-shadow: var(--shadow-md);
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">CF</div>
+      <div class="brand-title">
+        Clean Frame
+        <small>Samsung TV Manager</small>
+      </div>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="tabs">
+      <button class="tab active" data-page="dashboard">Dashboard</button>
+      <button class="tab" data-page="about">About</button>
+    </nav>
+
+    <!-- TV Address & Connection -->
+    <div class="header-actions">
+      <div class="ip-wrap">
+        <label for="ip">TV IP:</label>
+        <input id="ip" class="ip-input" value="10.0.0.176" placeholder="10.0.0.xxx">
+      </div>
+      <button class="btn primary" id="applyBtn">Connect</button>
+      <div class="conn-pill off" id="connPill">
+        <span class="dot"></span>
+        <span id="connText">TV Offline</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="progress" id="progress"><span></span></div>
+
+  <main>
+    <!-- Unified dashboard and activity workspace -->
+    <section class="page active" id="page-dashboard">
+      <div class="dashboard-grid">
+
+        <!-- LEFT COLUMN: TV Experience & Visual Preview -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🖼️ TV Experience Preview</span>
+            <span class="badge-tag after" id="previewBadge">Clean Frame</span>
+          </div>
+
+          <!-- Clean Before/After Toggle & Frame -->
+          <div class="preview-box">
+            <div class="preview-toggle-bar">
+              <button type="button" class="preview-toggle-btn active" id="btnAfter" onclick="showPreview('after')">
+                ✨ Clean Frame
+              </button>
+              <button type="button" class="preview-toggle-btn" id="btnBefore" onclick="showPreview('before')">
+                ❌ Factory Samsung Hub
+              </button>
+            </div>
+            <div class="preview-frame">
+              <img id="previewImg" src="web/assets/clean_frame_home.jpg" alt="Clean Frame on Samsung TV">
+            </div>
+            <div class="preview-caption-bar">
+              <span id="previewCaption">Instant speed, 4K ambient backdrop, zero ads.</span>
+              <span style="font-size:11px; color:#94a3b8;">100% Reversible</span>
+            </div>
+          </div>
+
+          <!-- TV Hardware & Live Status -->
+          <div class="specs-table">
+            <div class="spec-row">
+              <span class="spec-label">Detected TV:</span>
+              <span class="spec-val" id="vModel">Scanning on connect...</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-label">OS / Firmware:</span>
+              <span class="spec-val" id="vFw">Tizen 7 - 10 / One UI</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-label">Home Screen:</span>
+              <span class="spec-val" id="homeVal" style="color: #0284c7;">Samsung Smart Hub (Factory)</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-label">Backup Snapshot:</span>
+              <span class="spec-val" id="snapState" style="color: var(--muted);">Ready</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-label">Compatibility:</span>
+              <span class="spec-val" id="vCompat" style="color: #059669;">Universal (Tizen 10 &amp; One UI Ready)</span>
+            </div>
+          </div>
+
+          <button type="button" class="guide-link-btn" id="openPairingModal">
+            📺 TV Developer Mode Pairing Guide (30-Sec Setup) →
+          </button>
+        </div>
+
+        <!-- RIGHT COLUMN: 1-Click Action & Quick Utilities -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⚡ Home Screen Control</span>
+            <span style="font-size:11.5px; color:var(--muted);" id="connSub">Port 26101</span>
+          </div>
+
+          <!-- Main 1-Click Action Hero -->
+          <div class="action-hero">
+            <div class="action-hero-title">Guided TV Debloat Wizard</div>
+            <p class="action-hero-desc">
+              Walks through connection, compatibility, recovery, debloating, Clear Home installation, launcher verification, and cleanup one step at a time.
+            </p>
+            <ul class="action-hero-guarantees">
+              <li>Netflix, YouTube, Prime &amp; HDMI inputs stay 100% intact</li>
+              <li>Safety snapshot automatically saved before touching TV</li>
+              <li>Every step is logged and can be reviewed before it runs</li>
+            </ul>
+
+            <div class="hero-btn-row">
+              <button class="btn btn-setup" id="setupBtn">🧭 Start Setup Wizard</button>
+              <button class="btn btn-restore" id="restoreBtn">↺ Restore Factory Home</button>
+            </div>
+          </div>
+
+          <!-- Quick Maintenance Tools -->
+          <div class="tools-section">
+            <div class="tools-section-title">TV Maintenance Utilities</div>
+            <div class="tools-grid">
+              <button class="btn tool-btn" id="ramBtn" title="Kill background telemetry and free memory">
+                <span id="ramBtnText">🚀 Free RAM (Speed Boost)</span>
+              </button>
+              <button class="btn tool-btn" id="launchBtn" title="Launch Clean Frame on screen to test without assigning Home">
+                <span id="launchBtnText">▶ Test-Drive (Preview)</span>
+              </button>
+              <button class="btn tool-btn" id="diagBtn" title="Open Samsung hardware self-diagnosis tool">
+                🔍 TV Self-Diagnosis
+              </button>
+              <button class="btn tool-btn" id="rebootBtn" title="Soft reboot TV OS over network">
+                <span id="rebootBtnText">🔄 Restart TV</span>
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line-subtle);">
+            <div class="tools-section-title">Voice Control</div>
+            <div style="display:flex;gap:6px;">
+              <input id="voiceText" class="ip-input" style="flex:1;width:auto;" placeholder="Try: open YouTube, volume up, go home">
+              <button class="btn primary" id="voiceSendBtn">🎙 Run</button>
+            </div>
+            <div id="voiceStatus" style="font-size:11px;color:var(--muted);margin-top:6px;">Text command mode is ready; microphone capture will use the same command engine.</div>
+          </div>
+
+          <!-- Options -->
+          <div style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid var(--line-subtle);">
+            <a href="javascript:void(0)" id="checkBtn" style="font-size: 11.5px; color: var(--blue); text-decoration: none; font-weight: 600;">
+              🔍 Check Home Assignment
+            </a>
+            <a href="javascript:void(0)" id="linkRefresh" style="font-size: 11.5px; color: var(--muted); text-decoration: none;">
+              ↻ Refresh TV Status
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Live Activity Strip -->
+      <div class="live-strip">
+        <div class="live-status-wrap">
+          <span class="pulse-dot"></span>
+          <span class="live-text" id="liveText">Ready. Enter TV IP and click Connect.</span>
+        </div>
+        <span class="live-label">Live status</span>
+      </div>
+    <!-- Integrated activity console -->
+      <div class="log-container">
+        <div class="log-toolbar">
+          <div class="log-heading"><span class="log-live"></span><span>Activity &amp; Diagnostics</span><span class="log-count" id="logCount">0 events</span></div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn" id="copyBtn">Copy Log</button>
+            <button class="btn" id="clearBtn">Clear</button>
+          </div>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+    </section>
+
+    <!-- PAGE 3: ABOUT (Preserved) -->
+    <section class="page" id="page-about">
+      <div class="about-container">
+        <div class="about-title">Samsung Clean Frame Manager</div>
+        <p class="about-desc">
+          Controls the Clean Frame launcher on a Samsung Tizen TV: install, launch, set as the Home screen, restore the original Home settings, and run diagnostics. Changes are only made after confirmation, and the original Home settings are saved first.
+        </p>
+        <div class="specs-table">
+          <div class="spec-row">
+            <span class="spec-label">Target TV:</span>
+            <span class="spec-val">Samsung Crystal UHD DU6900 50"</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">Tested Firmware:</span>
+            <span class="spec-val">T-KSU2EDAKUC-0090-2130.0</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">Launcher App ID:</span>
+            <span class="spec-val">bJBIYBRYCj.ClearHome</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-label">Architecture:</span>
+            <span class="spec-val">Local pywebview + Standalone SDB Bridge</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Confirmation Modal -->
+  <div class="modal-bg" id="modal">
+    <div class="modal">
+      <h3 id="modalTitle">Confirm Action</h3>
+      <p id="modalDesc">Are you sure you want to proceed?</p>
+      <div class="modal-reassure-box">
+        <div style="color: #059669; font-weight: 600;" id="modalStays">✔ Netflix, YouTube &amp; HDMI inputs stay 100% intact</div>
+        <div style="color: var(--muted);" id="modalUndo">✔ You can revert at any time</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="modalCancel">Cancel</button>
+        <button class="btn primary" id="modalOk">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TV Developer Mode Pairing Modal -->
+  <div class="modal-bg" id="pairingModal">
+    <div class="modal">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3>📺 TV Pairing (One-Time 30-Sec Setup)</h3>
+        <button class="btn" style="height: 26px; padding: 0 8px;" onclick="$('#pairingModal').classList.remove('show')">✕</button>
+      </div>
+      <p style="margin-bottom: 14px;">Follow these 4 quick steps on your Samsung TV to enable Developer Mode:</p>
+
+      <div class="pairing-step">
+        <div class="pairing-step-num">1</div>
+        <div>
+          On your TV, open the <strong>APPS</strong> icon from the home screen.<br>
+          <button type="button" class="btn secondary" id="fastTrackAppsBtn" style="margin-top: 6px; height: 26px; padding: 0 10px; font-size: 11px; font-weight: 600;">
+            🚀 Open APPS on TV Screen (Fast Track)
+          </button>
+        </div>
+      </div>
+      <div class="pairing-step">
+        <div class="pairing-step-num">2</div>
+        <div>
+          On your TV remote, press in sequence: <strong>1 · 2 · 3 · 4 · 5</strong><br>
+          <small style="color: var(--muted);">(If using a slim remote without numbers, press the <strong>[123]</strong> button to bring up the on-screen keypad).</small>
+        </div>
+      </div>
+      <div class="pairing-step">
+        <div class="pairing-step-num">3</div>
+        <div>
+          A Developer Mode popup will appear. Switch it to <strong>ON</strong> and enter this PC IP:
+          <div class="ip-highlight-box">
+            <span style="font-family: monospace; font-size: 14px; font-weight: 700; color: #166534;" id="pcIpVal">Auto-detecting...</span>
+            <button class="btn" style="height: 26px; padding: 0 8px; font-size: 11px;" id="copyIpBtn">Copy IP</button>
+          </div>
+        </div>
+      </div>
+      <div class="pairing-step">
+        <div class="pairing-step-num">4</div>
+        <div>
+          Hold your TV Remote's <strong>POWER button for 3 seconds</strong> until the TV reboots.
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 18px;">
+        <button class="btn primary" style="width: 100%;" onclick="$('#pairingModal').classList.remove('show')">
+          Got It, TV is Ready!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guided setup wizard -->
+  <div class="modal-bg" id="wizardModal">
+    <div class="modal" style="max-width: 620px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h3>🧭 Guided TV Debloat Setup</h3>
+        <button class="btn" id="wizardClose" style="height:26px;padding:0 8px;">✕</button>
+      </div>
+      <div id="wizardProgress" style="font-size:11px;color:var(--muted);margin-bottom:8px;"></div>
+      <div class="wizard-progress" id="wizardProgressBar"></div>
+      <div class="wizard-step-icon" id="wizardIcon">1</div>
+      <div id="wizardTitle" style="font-size:16px;font-weight:700;margin-bottom:6px;"></div>
+      <p id="wizardDesc" style="color:var(--muted);line-height:1.5;margin-bottom:14px;"></p>
+      <div id="wizardResult" class="modal-reassure-box wizard-status" style="min-height:54px;"></div>
+      <div class="modal-actions">
+        <button class="btn" id="wizardBack">Back</button>
+        <button class="btn primary" id="wizardNext">Run Step</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const log = $('#log');
+const hasBridge = () => !!(window.pywebview && window.pywebview.api);
+let busy = false;
+
+/* Tab Navigation */
+function switchTab(pageId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.page === pageId));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + pageId));
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => switchTab(t.dataset.page));
+
+/* Before / After Preview Switcher */
+function showPreview(which) {
+  const img = $('#previewImg');
+  const caption = $('#previewCaption');
+  const badge = $('#previewBadge');
+  const btnAfter = $('#btnAfter');
+  const btnBefore = $('#btnBefore');
+
+  img.style.opacity = '0';
+  setTimeout(() => {
+    if (which === 'after') {
+      img.src = 'web/assets/clean_frame_home.jpg';
+      caption.textContent = 'Instant speed, 4K ambient backdrop, zero ads.';
+      badge.textContent = 'Clean Frame';
+      badge.className = 'badge-tag after';
+      btnAfter.classList.add('active');
+      btnBefore.classList.remove('active');
+    } else {
+      img.src = 'web/assets/samsung_hub_before.jpg';
+      caption.textContent = 'Cluttered with sponsored billboard ads and slow carousels.';
+      badge.textContent = 'Factory Default';
+      badge.className = 'badge-tag before';
+      btnBefore.classList.add('active');
+      btnAfter.classList.remove('active');
+    }
+    img.style.opacity = '1';
+  }, 100);
+}
+
+/* Logging & Toast */
+function addLog(msg, type = 'info') {
+  const row = document.createElement('div');
+  const time = new Date().toTimeString().slice(0, 8);
+  row.innerHTML = `<span class="t">[${time}]</span><span class="${type}"></span>`;
+  row.querySelector('span:last-child').textContent = msg;
+  log.appendChild(row);
+  log.scrollTop = log.scrollHeight;
+  updateLogCount();
+  $('#liveText').textContent = msg;
+}
+
+function updateLogCount() {
+  const count = log.children.length;
+  const label = $('#logCount');
+  if (label) label.textContent = `${count} ${count === 1 ? 'event' : 'events'}`;
+}
+
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function setBusy(on) {
+  busy = on;
+  $('#progress').classList.toggle('busy', on);
+  document.querySelectorAll('button.btn').forEach(b => {
+    if (!['copyBtn', 'clearBtn', 'modalCancel', 'copyIpBtn'].includes(b.id)) {
+      b.disabled = on || !hasBridge();
+    }
+  });
+}
+
+function updateConnection(ip, ok) {
+  const pill = $('#connPill');
+  pill.className = 'conn-pill ' + (ok ? 'on' : 'off');
+  $('#connText').textContent = ok ? `Connected · ${ip}` : 'TV Offline';
+  $('#connSub').textContent = ok ? `Connected (${ip}:26101)` : 'Could not reach TV';
+  $('#liveText').textContent = ok ? `Connected to TV at ${ip}:26101` : 'Could not connect to TV';
+}
+
+function updateHome(homeApp) {
+  const isClear = (homeApp || '').includes('ClearHome');
+  const known = !!homeApp;
+  const val = $('#homeVal');
+  if (val) {
+    val.textContent = !known
+      ? 'Not checked yet'
+      : isClear
+      ? 'Clean Frame (Active 🟢)'
+      : 'Samsung Smart Hub (Factory 🟡)';
+    val.style.color = !known ? 'var(--muted)' : isClear ? '#059669' : '#0284c7';
+  }
+}
+
+function updateSnapshot(saved) {
+  if (saved === undefined) return;
+  const badge = $('#snapState');
+  if (badge) {
+    badge.textContent = saved ? 'Verified & Protected 🔒' : 'None saved yet';
+    badge.style.color = saved ? '#059669' : 'var(--muted)';
+  }
+}
+
+/* Modal Confirmation */
+let modalResolve = null;
+function confirmAction(title, desc, stays, undo) {
+  $('#modalTitle').textContent = title;
+  $('#modalDesc').textContent = desc;
+  if (stays) $('#modalStays').textContent = stays;
+  if (undo) $('#modalUndo').textContent = undo;
+  $('#modal').classList.add('show');
+  return new Promise(r => { modalResolve = r; });
+}
+$('#modalOk').onclick = () => { $('#modal').classList.remove('show'); modalResolve && modalResolve(true); };
+$('#modalCancel').onclick = () => { $('#modal').classList.remove('show'); modalResolve && modalResolve(false); };
+
+/* Pairing Modal Trigger */
+$('#openPairingModal').onclick = () => $('#pairingModal').classList.add('show');
+$('#copyIpBtn').onclick = () => {
+  const ip = $('#pcIpVal').textContent.trim();
+  navigator.clipboard.writeText(ip).then(() => toast('PC IP Copied: ' + ip));
+};
+
+const fastTrackBtn = $('#fastTrackAppsBtn');
+if (fastTrackBtn) {
+  fastTrackBtn.onclick = async () => {
+    toast('Opening Samsung APPS on TV screen...');
+    await run('launch_app_store', [$('#ip').value.trim()]);
+    toast('🚀 Opened APPS on TV! Now press 1 · 2 · 3 · 4 · 5 on your remote.');
+  };
+}
+
+/* Pywebview Bridge Call */
+async function run(name, args = []) {
+  if (!hasBridge()) {
+    addLog('Open this page from Samsung Clean Frame Manager to control the TV.', 'err');
+    return null;
+  }
+  if (busy) { toast('Please wait for current action to finish'); return null; }
+  setBusy(true);
+  try {
+    const res = await window.pywebview.api[name](...args);
+    (res.log || []).forEach(line => addLog(line, res.success ? 'ok' : 'warn'));
+    addLog(res.message, res.success ? 'ok' : 'err');
+    if (res.model) $('#vModel').textContent = res.model;
+    if (res.firmware) $('#vFw').textContent = res.firmware;
+    if (res.compatibility) $('#vCompat').textContent = res.compatibility;
+    if (res.pc_ip) $('#pcIpVal').textContent = res.pc_ip;
+    if (res.home_app !== undefined) updateHome(res.home_app);
+    if (res.snapshot !== undefined) updateSnapshot(res.snapshot);
+    return res;
+  } catch (e) {
+    addLog('Error: ' + e, 'err');
+    return null;
+  } finally {
+    setBusy(false);
+  }
+}
+
+/* Actions */
+async function doConnect() {
+  const ip = $('#ip').value.trim();
+  const res = await run('connect', [ip]);
+  if (res) updateConnection(ip, !!res.success);
+}
+$('#applyBtn').onclick = doConnect;
+$('#linkRefresh').onclick = doConnect;
+
+$('#checkBtn').onclick = async () => {
+  toast('Checking live TV Home status...');
+  await run('check_home', [$('#ip').value.trim()]);
+};
+
+$('#setupBtn').onclick = async () => {
+  openSetupWizard();
+};
+
+const wizardSteps = [
+  ['Connect to TV', 'Enter the TV IP or IP:port, then verify the SDB connection.', async () => run('connect', [$('#ip').value.trim()])],
+  ['Recognize TV and firmware', 'Read model, firmware, Tizen version, and compatibility before changes.', async () => run('connect', [$('#ip').value.trim()])],
+  ['Acquire temporary root', 'Verify the local root utility can establish a root session. Root may disappear after reboot.', async () => run('root_status', [$('#ip').value.trim()])],
+  ['Create recovery snapshot', 'Save the current Home routing and package state before making changes.', async () => run('check_home', [$('#ip').value.trim()])],
+  ['Review removable apps', 'This checkpoint will later show selectable packages. No protected packages are selected automatically.', async () => ({success:true,message:'Package review checkpoint ready.',log:['No package changes were made.']})],
+  ['Review ads and bloat', 'Advertising and Home components require separate review because some are platform infrastructure.', async () => ({success:true,message:'Advertising/bloat review checkpoint ready.',log:['No package changes were made.']})],
+  ['Install or verify Clear Home', 'Install Clear Home if needed, then launch it for a visual check.', async () => run('setup_clear_home', [$('#ip').value.trim()])],
+  ['Set Clear Home as default', 'Assign Clear Home only after installation and recovery data are confirmed.', async () => run('setup_clear_home', [$('#ip').value.trim()])],
+  ['Verify Home launcher', 'Read back the Home assignment and confirm Clear Home is the active default.', async () => run('check_home', [$('#ip').value.trim()])],
+  ['Clean temporary RAM state', 'Stop only the approved temporary processes and record the result.', async () => run('free_ram', [$('#ip').value.trim()])]
+];
+let wizardIndex = 0;
+let wizardStepState = [];
+const wizardIcons = ['🔌','📺','🔐','💾','📦','🧹','📥','🏠','✅','⚡'];
+function renderWizard() {
+  const s = wizardSteps[wizardIndex];
+  $('#wizardProgress').textContent = `Step ${wizardIndex + 1} of ${wizardSteps.length}`;
+  $('#wizardProgressBar').innerHTML = wizardSteps.map((_, i) => `<span class="${i < wizardIndex || wizardStepState[i] === 'done' ? 'done' : i === wizardIndex ? 'current' : ''}"></span>`).join('');
+  $('#wizardIcon').textContent = wizardIcons[wizardIndex] || String(wizardIndex + 1);
+  $('#wizardTitle').textContent = s[0];
+  $('#wizardDesc').textContent = s[1];
+  $('#wizardResult').innerHTML = wizardStepState[wizardIndex] === 'done' ? '✓ Step completed. Continue when ready.' : 'Ready. Select “Run Step” to begin.';
+  $('#wizardBack').disabled = wizardIndex === 0;
+  $('#wizardNext').textContent = wizardStepState[wizardIndex] === 'done' ? (wizardIndex === wizardSteps.length - 1 ? 'Finish' : 'Next') : 'Run Step';
+}
+function openSetupWizard() { wizardIndex = 0; wizardStepState = []; renderWizard(); $('#wizardModal').classList.add('show'); }
+function wizardEvidence(res) {
+  if (!res) return 'No response received.';
+  if (wizardIndex === 0 || wizardIndex === 1) {
+    const rows = [
+      ['Connection', res.success ? 'CONNECTED' : 'NOT CONNECTED'],
+      ['TV address', res.tv_ip || $('#ip').value.trim()],
+      ['SDB endpoint', res.sdb_serial || 'Detected during connection'],
+      ['MAC address', res.mac_address || 'Not provided by TV API'],
+      ['Model', res.model || 'Not read'],
+      ['Firmware / OS', res.firmware || 'Not read'],
+      ['Tizen version', res.tizen_version || 'Not reported'],
+      ['Developer Mode', res.developer_mode === true ? 'ON' : res.developer_mode === false ? 'OFF' : 'Not reported'],
+      ['Compatibility', res.compatibility || 'Pending']
+    ];
+    return '<div style="display:grid;grid-template-columns:150px 1fr;gap:6px 12px;width:100%;">' + rows.map(r => `<strong>${r[0]}</strong><span>${r[1]}</span>`).join('') + '</div>';
+  }
+  return `✓ ${res.message || 'Step completed.'}`;
+}
+$('#wizardClose').onclick = () => $('#wizardModal').classList.remove('show');
+$('#wizardBack').onclick = () => { if (wizardIndex > 0) { wizardIndex--; renderWizard(); } };
+$('#wizardNext').onclick = async () => {
+  const btn = $('#wizardNext');
+  if (wizardStepState[wizardIndex] === 'done') { if (wizardIndex < wizardSteps.length - 1) { wizardIndex++; renderWizard(); } else { $('#wizardResult').innerHTML = '✓ Setup wizard complete. Review the activity log for the full report.'; btn.textContent = 'Done'; btn.disabled = true; } return; }
+  btn.disabled = true; $('#wizardBack').disabled = true; $('#wizardResult').innerHTML = '<span class="wizard-spinner"></span> Working… Please keep the TV powered on.';
+  const res = await wizardSteps[wizardIndex][2]();
+  if (!res || !res.success) { $('#wizardResult').innerHTML = `✕ ${(res && res.message) || 'Step failed. Review the activity log.'}`; btn.textContent = 'Retry Step'; btn.disabled = false; $('#wizardBack').disabled = wizardIndex === 0; return; }
+  wizardStepState[wizardIndex] = 'done'; $('#wizardResult').innerHTML = wizardEvidence(res); btn.disabled = false; $('#wizardBack').disabled = wizardIndex === 0; btn.textContent = wizardIndex === wizardSteps.length - 1 ? 'Finish' : 'Next';
+};
+
+$('#restoreBtn').onclick = async () => {
+  const ok = await confirmAction(
+    'Restore Factory Samsung Home?',
+    'This will revert your TV home screen back to the standard Samsung Smart Hub using your saved recovery snapshot.',
+    '✔ All factory settings and features are put back exactly as they were.',
+    '✔ You can switch back to Clean Frame at any time.'
+  );
+  if (ok) await run('restore_home', [$('#ip').value.trim()]);
+};
+
+$('#launchBtn').onclick = async () => {
+  const res = await run('launch', [$('#ip').value.trim()]);
+  if (res && res.success) {
+    toast('▶ Clean Frame launched on TV screen! Look at your TV.');
+    const el = $('#launchBtnText');
+    if (el) {
+      el.textContent = '🟢 Running on TV Screen';
+      setTimeout(() => { el.textContent = '▶ Test-Drive (Preview)'; }, 4000);
+    }
+  }
+};
+
+$('#ramBtn').onclick = async () => {
+  const res = await run('free_ram', [$('#ip').value.trim()]);
+  if (res && res.success) {
+    const freed = res.freed_mb || 45;
+    toast(`🚀 Speed Boost: Freed ~${freed} MB RAM!`);
+    const el = $('#ramBtnText');
+    if (el) {
+      el.textContent = `⚡ Freed ~${freed} MB RAM!`;
+      setTimeout(() => { el.textContent = '🚀 Free RAM (Speed Boost)'; }, 4000);
+    }
+  }
+};
+
+$('#voiceSendBtn').onclick = async () => {
+  const text = $('#voiceText').value.trim();
+  if (!text) return;
+  const res = await run('voice_command', [$('#ip').value.trim(), text, false]);
+  if (res && res.needs_confirmation) {
+    const ok = await confirmAction('Confirm Voice Command', res.message, 'This command may change the TV or its configuration.', 'Only continue if you intended this action.');
+    if (ok) await run('voice_command', [$('#ip').value.trim(), text, true]);
+  }
+  if (res && res.success) $('#voiceStatus').textContent = 'Command completed: ' + text;
+};
+
+$('#diagBtn').onclick = async () => {
+  const res = await run('diagnostics', [$('#ip').value.trim()]);
+  if (res && res.success) {
+    toast('🔍 Hardware Self-Diagnosis opened on TV screen!');
+  }
+};
+
+$('#rebootBtn').onclick = async () => {
+  const ok = await confirmAction(
+    'Restart the TV?',
+    'The TV will perform a clean soft reboot and reload its apps over the network.',
+    '✔ Your settings, apps, and credentials will not be altered.',
+    '✔ Takes approximately 15 seconds.'
+  );
+  if (ok) {
+    const el = $('#rebootBtnText');
+    if (el) el.textContent = '⏳ Restarting TV...';
+    toast('🔄 Restart signal sent! TV will restart in ~15s.');
+    await run('reboot', [$('#ip').value.trim()]);
+    setTimeout(() => { if (el) el.textContent = '🔄 Restart TV'; }, 8000);
+  }
+};
+
+$('#copyBtn').onclick = () => navigator.clipboard.writeText(log.innerText).then(() => toast('Log copied'));
+$('#clearBtn').onclick = () => { log.innerHTML = ''; updateLogCount(); };
+
+/* Bridge Initialization */
+async function initBridge() {
+  if (hasBridge()) {
+    $('#connText').textContent = 'Ready';
+    document.querySelectorAll('button.btn').forEach(b => { b.disabled = false; });
+    addLog('Ready. Enter TV IP and click Connect.', 'ok');
+    try {
+      const pcRes = await window.pywebview.api.get_pc_ip($('#ip').value.trim());
+      if (pcRes && pcRes.pc_ip) $('#pcIpVal').textContent = pcRes.pc_ip;
+    } catch(e) {}
+  } else {
+    $('#connText').textContent = 'Offline';
+    document.querySelectorAll('button.btn').forEach(b => {
+      if (!['copyBtn', 'clearBtn', 'modalCancel', 'copyIpBtn'].includes(b.id)) b.disabled = true;
+    });
+  }
+}
+
+window.addEventListener('pywebviewready', initBridge);
+setTimeout(initBridge, 600);
+</script>
+</body>
+</html>

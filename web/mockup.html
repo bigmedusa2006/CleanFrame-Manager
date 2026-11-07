@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samsung TV Simplifier</title>
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --surface: #ffffff;
+    --surface-2: #f0f3f9;
+    --border: #e2e7f0;
+    --text: #1a2233;
+    --muted: #6b7689;
+    --accent: #1f6feb;
+    --accent-hover: #185bc9;
+    --accent-soft: #e7f0ff;
+    --ok: #12a37a;
+    --ok-soft: #e3f6ef;
+    --warn: #d97706;
+    --warn-soft: #fdf1df;
+    --danger: #dc3c46;
+    --danger-soft: #fdecee;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(16,24,40,.04), 0 4px 14px rgba(16,24,40,.05);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px;
+    height: 100vh; display: flex; flex-direction: column;
+  }
+
+  /* Top bar */
+  .topbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 14px 20px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; margin-right: 8px; }
+  .brand-logo {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, #1f6feb, #7c5cf6);
+    color: #fff; font-weight: 700; display: grid; place-items: center;
+  }
+  .brand h1 { font-size: 15px; font-weight: 600; }
+  .brand small { font-size: 11px; color: var(--muted); }
+  .label { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .input {
+    height: 36px; padding: 0 12px; width: 180px;
+    border: 1px solid var(--border); border-radius: 9px;
+    background: var(--surface-2); font: inherit; color: var(--text); outline: none;
+  }
+  .input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-soft); }
+  .spacer { flex: 1; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    background: var(--danger-soft); color: var(--danger);
+  }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .pill.on { background: var(--ok-soft); color: var(--ok); }
+
+  /* Buttons */
+  .btn {
+    height: 36px; padding: 0 16px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); font: inherit; font-weight: 600; font-size: 13px;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background .15s, border-color .15s, transform .08s;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn:active { transform: scale(.98); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .btn.ok:hover { filter: brightness(.95); }
+  .btn.danger { background: var(--danger-soft); color: var(--danger); border-color: transparent; }
+  .btn.danger:hover { background: #fbdde0; }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); height: 30px; font-size: 12px; }
+  .btn.ghost:hover { color: var(--text); }
+  .btn.full { width: 100%; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 4px; padding: 10px 20px 0;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 16px; border: none; background: none;
+    font: inherit; font-weight: 600; font-size: 13px; color: var(--muted);
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Content */
+  .content { flex: 1; overflow-y: auto; padding: 20px; }
+  .page { display: none; max-width: 1040px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 12px;
+  }
+
+  /* Status hero */
+  .status-hero { display: flex; align-items: center; gap: 22px; }
+  .tv-icon {
+    width: 110px; height: 70px; border-radius: 10px; background: var(--surface-2);
+    border: 1px solid var(--border); display: grid; place-items: center; flex-shrink: 0;
+  }
+  .tv-icon svg { width: 56px; height: 56px; color: var(--muted); }
+  .status-info h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .status-info .line { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .status-info .line .d { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+  .status-info .line.ok .d { background: var(--ok); }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; }
+  .stat .k { font-size: 11px; color: var(--muted); font-weight: 600; }
+  .stat .v { font-size: 18px; font-weight: 700; margin-top: 4px; }
+  .stat .s { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .bar { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+  .bar > span { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width .4s; }
+
+  /* Grids */
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Apps list */
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .search {
+    height: 36px; padding: 0 12px; flex: 1; min-width: 200px;
+    border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2);
+    font: inherit; outline: none;
+  }
+  .search:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-soft); }
+  .chip {
+    height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); font: inherit; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer;
+  }
+  .chip.active { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+
+  .app-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+  }
+  .app-row:last-child { border-bottom: none; }
+  .app-icon {
+    width: 36px; height: 36px; border-radius: 9px; background: var(--surface-2);
+    display: grid; place-items: center; font-weight: 700; color: var(--muted); flex-shrink: 0;
+  }
+  .app-meta { flex: 1; min-width: 0; }
+  .app-meta .n { font-weight: 600; }
+  .app-meta .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .tag {
+    font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .tag.remove { background: var(--danger-soft); color: var(--danger); }
+  .tag.optional { background: var(--warn-soft); color: var(--warn); }
+  .tag.keep { background: var(--ok-soft); color: var(--ok); }
+  .tag.removed { background: var(--surface-2); color: var(--muted); }
+
+  /* Toggle switch */
+  .switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch span {
+    position: absolute; inset: 0; background: #cdd5e3; border-radius: 999px; cursor: pointer; transition: .2s;
+  }
+  .switch span::before {
+    content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  }
+  .switch input:checked + span { background: var(--ok); }
+  .switch input:checked + span::before { transform: translateX(18px); }
+  .switch input:disabled + span { opacity: .4; }
+
+  .savings {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--accent-soft); border-radius: 10px; padding: 12px 16px; margin-top: 14px;
+    font-size: 13px; color: var(--accent); font-weight: 600;
+  }
+
+  /* Settings list */
+  .setting-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-row .n { font-weight: 600; }
+  .setting-row .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Log */
+  .log {
+    background: #0f1626; color: #c9d4ea; border-radius: 10px; padding: 14px 16px;
+    font-family: Consolas, "Cascadia Code", monospace; font-size: 12.5px; line-height: 1.7;
+    height: 200px; overflow-y: auto;
+  }
+  .log .t { color: #5f6f8f; margin-right: 8px; }
+  .log .info { color: #7fb0ff; }
+  .log .ok { color: #5fd9b0; }
+  .log .warn { color: #f5b75a; }
+  .log .err { color: #ff8a8e; }
+
+  .note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+  .toast {
+    position: fixed; bottom: 20px; right: 20px; background: #1a2233; color: #fff;
+    padding: 12px 16px; border-radius: 10px; font-size: 13px; box-shadow: var(--shadow);
+    transform: translateY(20px); opacity: 0; transition: .25s; pointer-events: none;
+  }
+  .toast.show { transform: none; opacity: 1; }
+
+  @media (max-width: 760px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+    .status-hero { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo">S</div>
+    <div>
+      <h1>TV Simplifier</h1>
+      <small>Debloat &amp; declutter for Samsung TVs</small>
+    </div>
+  </div>
+  <span class="label">TV IP</span>
+  <input class="input" id="ip" value="10.0.0.176">
+  <button class="btn primary" id="connectBtn">Connect</button>
+  <div class="spacer"></div>
+  <div class="pill" id="statusPill"><span class="dot"></span><span id="statusText">Offline</span></div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" data-tab="status">Status</button>
+  <button class="tab" data-tab="debloat">Debloat</button>
+  <button class="tab" data-tab="home">Home Screen</button>
+  <button class="tab" data-tab="settings">Settings</button>
+  <button class="tab" data-tab="log">Activity</button>
+  <button class="tab" data-tab="about">About</button>
+</div>
+
+<div class="content">
+
+  <!-- STATUS -->
+  <section class="page active" id="page-status">
+    <div class="card">
+      <div class="status-hero">
+        <div class="tv-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <div class="status-info">
+          <h2 id="tvName">Samsung Crystal UHD DU6900 (50")</h2>
+          <div class="line" id="connLine"><span class="d"></span><span>Not connected. Make sure the TV is on and Developer Mode is enabled.</span></div>
+          <div class="line"><span class="d" style="background:#9aa4b8"></span><span>Last scan: never</span></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="stats">
+        <div class="stat"><div class="k">Installed apps</div><div class="v" id="sApps">—</div><div class="s">Detected after connect</div></div>
+        <div class="stat"><div class="k">Bloat detected</div><div class="v" id="sBloat">—</div><div class="s">Safe to remove</div></div>
+        <div class="stat"><div class="k">Memory in use</div><div class="v" id="sRam">~1.5–2.0 GB</div><div class="s">Of total RAM</div>
+          <div class="bar"><span id="ramBar" style="width:0%"></span></div></div>
+        <div class="stat"><div class="k">Freed so far</div><div class="v" id="sFreed">0 MB</div><div class="s">This session</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Quick actions</div>
+      <div class="grid-3">
+        <button class="btn primary full" id="quickScan">Scan TV</button>
+        <button class="btn full" id="quickFree">Free RAM</button>
+        <button class="btn full" id="quickClean">Remove selected bloat</button>
+      </div>
+      <p class="note">Every change is backed up first. You can restore from the Settings tab.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Device specifications</div>
+      <div class="setting-row"><div><div class="n">Model</div><div class="d">Retail name</div></div><div>Samsung Crystal UHD DU6900 Series (2024)</div></div>
+      <div class="setting-row"><div><div class="n">Model code</div><div class="d">Canadian regional unit</div></div><div>UN50DU6900FXZC</div></div>
+      <div class="setting-row"><div><div class="n">Firmware</div><div class="d">Build T-KSU2EDAKUC-0090-REL-202605141700</div></div><div>T-KSU2EDAKUC-0090-2130.0</div></div>
+      <div class="setting-row"><div><div class="n">Operating system</div><div class="d">Platform KantSU2e</div></div><div>Tizen OS 9.0</div></div>
+      <div class="setting-row"><div><div class="n">Display</div><div class="d">Panel VA, direct-lit LED backlight</div></div><div>49.5" · 3840×2160 · 60 Hz</div></div>
+      <div class="setting-row"><div><div class="n">HDR</div><div class="d">Supported formats</div></div><div>HDR10, HDR10+, HLG</div></div>
+      <div class="setting-row"><div><div class="n">Audio</div><div class="d">Left and right down-firing speakers</div></div><div>2.0 ch · 20 W (10 W + 10 W)</div></div>
+      <div class="setting-row"><div><div class="n">Ports</div><div class="d">HDMI 2.0 / HDCP 2.2, eARC on HDMI 2</div></div><div>3 × HDMI · 1 × USB 2.0 · 1 × optical · 1 × Ethernet · 1 × RF</div></div>
+      <div class="setting-row"><div><div class="n">Wireless</div><div class="d">Dual-band Wi-Fi and Bluetooth</div></div><div>Wi-Fi 5 · Bluetooth 5.2</div></div>
+      <div class="setting-row"><div><div class="n">Power</div><div class="d">AC 110–120 V, 50/60 Hz</div></div><div>~65 W typical · ~135 W peak · &lt;0.5 W standby</div></div>
+      <div class="setting-row"><div><div class="n">Dimensions and weight</div><div class="d">Without stand: 1118 × 644 × 60 mm</div></div><div>11.4 kg (25.1 lb) without stand</div></div>
+      <div class="setting-row"><div><div class="n">Identifiers</div><div class="d">Device unique ID and Wi-Fi MAC</div></div><div>uuid:5fe0d7f8-…cc659d6a · C8:A6:EF:9E:6B:74</div></div>
+    </div>
+  </section>
+
+  <!-- DEBLOAT -->
+  <section class="page" id="page-debloat">
+    <div class="card">
+      <div class="toolbar">
+        <input class="search" id="search" placeholder="Search apps…">
+        <button class="chip active" data-filter="all">All</button>
+        <button class="chip" data-filter="remove">Safe to remove</button>
+        <button class="chip" data-filter="optional">Optional</button>
+        <button class="chip" data-filter="keep">Keep</button>
+      </div>
+      <div id="appList"></div>
+      <div class="savings">
+        <span id="savingsText">0 apps selected · ~0 MB to free</span>
+        <button class="btn ok" id="applyDebloat" disabled>Apply changes</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOME -->
+  <section class="page" id="page-home">
+    <div class="card">
+      <div class="card-title">Home screen</div>
+      <div class="setting-row">
+        <div><div class="n">Use Clean Home as TV home</div><div class="d">Replaces the default home with a minimal launcher</div></div>
+        <label class="switch"><input type="checkbox" id="homeToggle"><span></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="n">Hide promoted content</div><div class="d">Removes banners and ads from the home rows</div></div>
+        <label class="switch"><input type="checkbox" checked><span></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="n">Auto-start my last app</div><div class="d">Open the most-used app when the TV turns on</div></div>
+        <label class="switch"><input type="checkbox"><span></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="n">Pin favourites</div><div class="d">Keep up to 6 apps on the first row</div></div>
+        <button class="btn">Choose apps</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="grid-2">
+        <button class="btn full" id="restoreHome">Restore original home</button>
+        <button class="btn full" id="checkHome">Check status</button>
+      </div>
+      <p class="note">A recovery snapshot is saved before any home change.</p>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="page" id="page-settings">
+    <div class="card">
+      <div class="card-title">Performance</div>
+      <div class="setting-row">
+        <div><div class="n">Background app limit</div><div class="d">Close idle apps automatically when RAM is low</div></div>
+        <label class="switch"><input type="checkbox" checked><span></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="n">Disable auto-updates for removed apps</div><div class="d">Stops Samsung from reinstalling bloat</div></div>
+        <label class="switch"><input type="checkbox" checked><span></span></label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">System</div>
+      <div class="grid-2">
+        <button class="btn full">Restore last backup</button>
+        <button class="btn danger full" id="rebootBtn">Soft reboot TV</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOG -->
+  <section class="page" id="page-log">
+    <div class="card">
+      <div class="toolbar" style="justify-content:space-between">
+        <div class="card-title" style="margin:0">Activity</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn ghost" id="copyLog">Copy</button>
+          <button class="btn ghost" id="clearLog">Clear</button>
+        </div>
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="page" id="page-about">
+    <div class="card">
+      <div class="card-title">About</div>
+      <p style="line-height:1.6">TV Simplifier removes unused Samsung apps and background services to free memory and declutter the home screen. Changes are reversible, and a backup is created before anything is modified.</p>
+      <p class="note">Built for Tizen 9.0 · Target model UN50DU6900</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ---------- Helpers ---------- */
+  const $ = (s) => document.querySelector(s);
+  const log = $('#log');
+  const toast = $('#toast');
+  let connected = false;
+  let freedMB = 0;
+
+  function addLog(msg, type = 'info') {
+    const t = new Date().toTimeString().slice(0, 8);
+    const d = document.createElement('div');
+    d.innerHTML = `<span class="t">[${t}]</span><span class="${type}">${msg}</span>`;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+  function setConnected(on) {
+    connected = on;
+    $('#statusPill').classList.toggle('on', on);
+    $('#statusText').textContent = on ? 'Connected' : 'Offline';
+    const line = $('#connLine');
+    line.classList.toggle('ok', on);
+    line.querySelector('span:last-child').textContent = on
+      ? 'Connected and ready'
+      : 'Not connected. Make sure the TV is on and Developer Mode is enabled.';
+  }
+
+  /* ---------- Tabs ---------- */
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      $('#page-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ---------- Sample app data (illustrative only) ---------- */
+  const apps = [
+    { n: 'Samsung TV Plus',   d: 'Free channels and promoted content', tier: 'remove', mb: 120 },
+    { n: 'Bixby',             d: 'Voice assistant service',            tier: 'optional', mb: 85 },
+    { n: 'Samsung Global Goals', d: 'Promotional app',                 tier: 'remove', mb: 40 },
+    { n: 'Samsung Health',    d: 'Fitness tracking',                   tier: 'optional', mb: 150 },
+    { n: 'Samsung Pay',       d: 'Mobile payments on TV',              tier: 'optional', mb: 60 },
+    { n: 'Samsung Gaming Hub',d: 'Cloud gaming hub',                   tier: 'optional', mb: 95 },
+    { n: 'Netflix',           d: 'Streaming service',                  tier: 'keep', mb: 0 },
+    { n: 'YouTube',           d: 'Video streaming',                    tier: 'keep', mb: 0 },
+    { n: 'Smart Things',      d: 'Connected home hub',                 tier: 'optional', mb: 70 },
+  ];
+  const selected = new Set();
+  let filter = 'all', query = '';
+
+  function renderApps() {
+    const list = $('#appList');
+    list.innerHTML = '';
+    apps
+      .filter(a => (filter === 'all' || a.tier === filter))
+      .filter(a => a.n.toLowerCase().includes(query.toLowerCase()))
+      .forEach((a, i) => {
+        const id = 'app' + apps.indexOf(a);
+        const row = document.createElement('div');
+        row.className = 'app-row';
+        const tagLabel = { remove: 'Safe to remove', optional: 'Optional', keep: 'Keep' }[a.tier];
+        row.innerHTML = `
+          <div class="app-icon">${a.n[0]}</div>
+          <div class="app-meta">
+            <div class="n">${a.n}</div>
+            <div class="d">${a.d}${a.mb ? ' · ~' + a.mb + ' MB' : ''}</div>
+          </div>
+          <span class="tag ${a.tier}">${tagLabel}</span>
+          <label class="switch">
+            <input type="checkbox" id="${id}" ${a.tier === 'keep' ? 'disabled' : ''} ${selected.has(id) ? 'checked' : ''}>
+            <span></span>
+          </label>`;
+        list.appendChild(row);
+        row.querySelector('input').addEventListener('change', e => {
+          e.target.checked ? selected.add(id) : selected.delete(id);
+          updateSavings();
+        });
+      });
+  }
+
+  function updateSavings() {
+    let mb = 0;
+    selected.forEach(id => mb += apps[+id.replace('app', '')].mb);
+    $('#savingsText').textContent = `${selected.size} apps selected · ~${mb} MB to free`;
+    $('#applyDebloat').disabled = selected.size === 0 || !connected;
+  }
+
+  document.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+      filter = c.dataset.filter;
+      renderApps();
+    });
+  });
+  $('#search').addEventListener('input', e => { query = e.target.value; renderApps(); });
+
+  $('#applyDebloat').addEventListener('click', () => {
+    let mb = 0;
+    selected.forEach(id => {
+      const a = apps[+id.replace('app', '')];
+      mb += a.mb;
+      addLog(`Removed ${a.n} (~${a.mb} MB)`, 'ok');
+      a.tier = 'removed';
+    });
+    freedMB += mb;
+    $('#sFreed').textContent = freedMB + ' MB';
+    selected.clear();
+    renderApps();
+    updateSavings();
+    showToast('Changes applied');
+  });
+
+  /* ---------- Connect & actions (simulated) ---------- */
+  $('#connectBtn').addEventListener('click', () => {
+    const ip = $('#ip').value;
+    addLog(`Connecting to ${ip}…`, 'info');
+    setTimeout(() => {
+      // Mockup: keep offline to show the disconnected state
+      addLog(`Could not reach ${ip}. Check power and Developer Mode.`, 'warn');
+      setConnected(false);
+    }, 800);
+  });
+
+  function simulateScan() {
+    if (!connected) { addLog('Connect to a TV first.', 'warn'); return; }
+    addLog('Scanning installed apps…', 'info');
+  }
+  $('#quickScan').addEventListener('click', simulateScan);
+  $('#quickFree').addEventListener('click', () => { addLog('Freeing RAM…', 'info'); showToast('Memory freed'); });
+  $('#quickClean').addEventListener('click', () => { document.querySelector('[data-tab="debloat"]').click(); });
+  $('#homeToggle').addEventListener('change', e => addLog(e.target.checked ? 'Clean Home enabled' : 'Clean Home disabled', 'info'));
+  $('#restoreHome').addEventListener('click', () => addLog('Restoring original home from snapshot…', 'info'));
+  $('#checkHome').addEventListener('click', () => addLog('Checking home status…', 'info'));
+  $('#rebootBtn').addEventListener('click', () => addLog('Soft reboot requested…', 'warn'));
+  $('#copyLog').addEventListener('click', () => navigator.clipboard.writeText(log.innerText).then(() => showToast('Log copied')));
+  $('#clearLog').addEventListener('click', () => log.innerHTML = '');
+
+  renderApps();
+  updateSavings();
+  addLog('Ready. Enter your TV IP and press Connect.', 'ok');
+</script>
+</body>
+</html> , Please let me know if this is possible? before continuing
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-29T11:26:30-07:00.
+</ADDITIONAL_METADATA>
