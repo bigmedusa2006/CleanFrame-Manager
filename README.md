@@ -1,6 +1,6 @@
 # CleanFrame Manager
 
-CleanFrame Manager is an experimental Windows utility for Samsung Tizen TV owners who want a more focused home-screen experience. It provides a guided workflow for connecting to a TV in Developer Mode, reviewing installed content, and configuring an alternative launcher experience where supported.
+CleanFrame Manager is an independent experimental research-and-development project for studying and improving user-controlled Samsung Tizen TV home-screen workflows. It provides a guided Windows workflow for connecting to a TV in Developer Mode, reviewing installed content, and configuring an alternative launcher experience where supported.
 
 > Use this project only on a television you own or are authorized to administer. TV firmware, model support, and available developer capabilities vary. Make a recovery plan before changing launcher or application settings.
 
