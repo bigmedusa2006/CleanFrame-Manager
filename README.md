@@ -6,7 +6,7 @@ CleanFrame Manager is an independent experimental research-and-development proje
 
 > **Unofficial project:** CleanFrame Manager is independent software and is not affiliated with, endorsed by, or sponsored by Samsung Electronics Co., Ltd. Samsung and Tizen are trademarks of their respective owners.
 
-![CleanFrame Manager concept mockup](web/assets/cleanframe-concept-mockup.png)
+![CleanFrame Manager concept mockup](cleanframe-concept-mockup.png)
 
 *Concept mockup for documentation and presentation. It is not a photograph of a Samsung TV and is not an official Samsung interface.*
 
@@ -77,7 +77,7 @@ manager_window.py              Windows application backend
 tv_manager_v3.html             Current guided interface
 SamsungCleanFrameManager.spec  PyInstaller build configuration
 CleanFrameManager-Setup.iss    Inno Setup configuration
-web/                            UI mockups and visual assets
+cleanframe-concept-mockup.png   Original concept artwork for documentation
 ```
 
 Build output, installers, signed TV packages, local certificates, and machine-specific files are excluded from the source repository by default. Check ownership and redistribution rights before adding any third-party package or Samsung-derived asset.
