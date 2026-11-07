@@ -4,15 +4,15 @@ CleanFrame Manager is an experimental Windows utility for Samsung Tizen TV owner
 
 > Use this project only on a television you own or are authorized to administer. TV firmware, model support, and available developer capabilities vary. Make a recovery plan before changing launcher or application settings.
 
-![CleanFrame launcher screenshot](web/assets/clean_frame_home.jpg)
-
-CleanFrame Manager is intended to help create a cleaner, less distracting TV home-screen experience.
+> **Unofficial project:** CleanFrame Manager is independent software and is not affiliated with, endorsed by, or sponsored by Samsung Electronics Co., Ltd. Samsung and Tizen are trademarks of their respective owners.
 
 ## Current status
 
 This is an early, model-specific release (`v0.1.0-alpha`). Treat it as experimental software. A successful connection, temporary elevated access, or a visible launcher change on one television does not prove compatibility with every Samsung TV.
 
 The guided interface is currently provided by `tv_manager_v3.html` and the Windows backend by `manager_window.py`. The project includes checkpoints and status reporting, but some removal operations may remain intentionally guarded or unavailable depending on the TV.
+
+CleanFrame Manager is intended to help create a cleaner, less distracting TV home-screen experience. It is not an official Samsung utility and does not guarantee compatibility, continued operation after firmware updates, or preservation of warranty coverage.
 
 ## Features
 
@@ -51,6 +51,8 @@ CleanFrame Manager can affect the TV's application and launcher environment. Bef
 4. Use one checkpoint at a time and verify the TV after each change.
 5. Stop if the TV identity, connection state, or permissions do not match the expected result.
 
+Use only on a television you own or are authorized to administer. Do not use the project to access another person's TV, bypass access controls, or interfere with Samsung services or other users' devices.
+
 Temporary elevated access should be treated as temporary. Do not assume that it survives a reboot or remains available after a firmware update.
 
 ## Supported models
@@ -86,4 +88,6 @@ This project is released under the MIT License. See [LICENSE](LICENSE).
 
 ## Disclaimer
 
-This software is provided without warranty. The author is not responsible for data loss, application loss, launcher failure, warranty impact, firmware problems, or other damage resulting from its use.
+This software is provided without warranty. The authors are not responsible for data loss, application loss, launcher failure, warranty impact, firmware problems, service interruption, or other damage resulting from its use. Samsung Electronics Co., Ltd. has not reviewed or approved this project.
+
+The repository's screenshots, icons, wallpapers, and other media must be original, appropriately licensed, or used with permission. Third-party product names and logos remain the property of their respective owners and do not indicate endorsement.
