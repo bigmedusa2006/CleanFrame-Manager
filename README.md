@@ -20,12 +20,14 @@ The guided interface is provided by `tv_manager_v3.html` with the Windows backen
 
 ## Features
 
-- Guided Samsung TV connection workflow
-- Developer Mode and connection-status checks
-- TV identity and firmware information when available
-- Recovery-oriented checkpoints before risky actions
-- Alternative launcher configuration where supported
-- Windows desktop interface
+- Guided Windows dashboard for entering a TV IP address and connecting to a Samsung TV
+- Connection, Developer Mode, TV identity, firmware, and home-assignment status checks
+- Launcher Manager for selecting, installing, and setting supported Clear Home or CleanFrame/Google TV packages as Home
+- Home-assignment verification before and after launcher changes
+- Developer Mode setup guide and recovery-oriented status/checkpoint messaging
+- Free-RAM, TV self-diagnosis, restore-Samsung-launcher, and reboot controls where supported
+- Activity log with copy and clear controls
+- Packaged Windows distribution in `dist-v0.2.9`
 
 ## Requirements
 
@@ -33,17 +35,26 @@ The guided interface is provided by `tv_manager_v3.html` with the Windows backen
 - A Samsung Tizen TV that you own or administer
 - TV and computer on the same network
 - Samsung TV Developer Mode enabled
-- Python 3.11 for running from source, or a project-provided installer when released
 - Network access permitted between the computer and TV
+- For the packaged distribution: use the included `SamsungCleanFrameManager.exe`; Python is not required
+- For source execution: Python 3.11 and the project dependencies are required
+
+The TV must be configured for Developer Mode before installation or remote actions can work. Available actions and launcher packages vary by TV model, firmware, network state, and Samsung platform behavior.
+
+## Packaged distribution
+
+The current packaged build is under `dist-v0.2.9/SamsungCleanFrameManager/`. Launch `SamsungCleanFrameManager.exe` from that folder. Keep the `_internal` folder beside the executable; do not copy the executable out by itself.
+
+The distribution also contains the launcher package files used by the application. Only install packages on a TV you own or are authorized to administer, and verify the selected launcher and recovery path before making it the Home application.
 
 ## Run from source
 
 ```powershell
-Set-Location -LiteralPath 'D:\Samsung TV Project\CleanFrame Manager Workspace'
+Set-Location -LiteralPath 'D:\Samsung TV Project\CleanFrame Manager Workspace\CleanFrame Manager OG'
 python manager_window.py
 ```
 
-The exact connection and Developer Mode steps depend on the TV model and Tizen version. Follow the on-screen checks and do not continue when the application reports that a prerequisite is missing.
+Install the source dependencies used by the project before running it. The exact connection and Developer Mode steps depend on the TV model and Tizen version. Follow the on-screen checks and do not continue when the application reports that a prerequisite is missing.
 
 ## Safety and recovery
 
@@ -61,7 +72,7 @@ Temporary elevated access should be treated as temporary. Do not assume that it 
 
 ## Supported models
 
-There is no universal support guarantee yet. Compatibility reports should include:
+There is no universal support guarantee. The `v0.2.9` distribution is intended for model-specific testing on Samsung Tizen TVs with Developer Mode enabled. Compatibility reports should include:
 
 - Exact TV model code
 - Tizen version and firmware version
@@ -77,10 +88,11 @@ manager_window.py              Windows application backend
 tv_manager_v3.html             Current guided interface
 SamsungCleanFrameManager.spec  PyInstaller build configuration
 CleanFrameManager-Setup.iss    Inno Setup configuration
+dist-v0.2.9/                    Current packaged Windows distribution and launcher packages
 cleanframe-manager-screenshot.png  CleanFrame Manager application screenshot for documentation
 ```
 
-Build output, installers, signed TV packages, local certificates, and machine-specific files are excluded from the source repository by default. Check ownership and redistribution rights before adding any third-party package or Samsung-derived asset.
+Build caches, temporary runtime data, local certificates, and machine-specific files are excluded from the source repository by default. The `dist-v0.2.9` directory is the explicit packaged distribution committed for this release. Check ownership and redistribution rights before adding any third-party package or Samsung-derived asset.
 
 ## Contributing
 
