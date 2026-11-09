@@ -12,11 +12,11 @@ CleanFrame Manager is an independent experimental research-and-development proje
 
 ## Current status
 
-This is an early, model-specific release (`v0.1.0-alpha`). Treat it as experimental software. A successful connection, temporary elevated access, or a visible launcher change on one television does not prove compatibility with every Samsung TV.
+The latest packaged build is `v0.2.9`. It remains experimental and model-specific: a successful connection, temporary elevated access, or visible launcher change on one television does not prove compatibility with every Samsung TV.
 
-The guided interface is currently provided by `tv_manager_v3.html` and the Windows backend by `manager_window.py`. The project includes checkpoints and status reporting, but some removal operations may remain intentionally guarded or unavailable depending on the TV.
+The current Windows application provides a guided dashboard for entering a TV IP address, checking connection and Developer Mode state, reading available TV identity and firmware information, and reviewing the current home-screen assignment. It includes launcher management for the available Clear Home and CleanFrame/Google TV packages, including install, set-as-home, and home-assignment verification actions, plus Developer Mode guidance, free-RAM, TV self-diagnosis, restore-launcher, and reboot controls where supported.
 
-CleanFrame Manager is intended to help create a cleaner, less distracting TV home-screen experience. It is not an official Samsung utility and does not guarantee compatibility, continued operation after firmware updates, or preservation of warranty coverage.
+The guided interface is provided by `tv_manager_v3.html` with the Windows backend in `manager_window.py`. Actions remain dependent on the TV model, firmware, network, Developer Mode, package compatibility, and Samsung platform behavior. Some operations may be unavailable or intentionally guarded, and the project does not guarantee compatibility, continued operation after firmware updates, or preservation of warranty coverage.
 
 ## Features
 
